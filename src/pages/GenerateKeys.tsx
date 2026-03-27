@@ -83,9 +83,15 @@ export default function GenerateKeys() {
       toast({ title: `${keys.length} key(s) generated & saved`, description: keys.length === 1 ? "Auto-copied to clipboard" : `Type: ${licenseType}` });
       // Discord notification
       sendDiscordNotification(
-        "🔑 New License Key Generated",
-        `**${keys.length}** ${licenseType} key(s) created${customerName ? ` for **${customerName}**` : ""}\n\`${keys.join("`, `")}\``,
-        0x00ff00
+        "🔑 NEW LICENSE GENERATED",
+        "",
+        0x00ff00,
+        [
+          { name: "Keys", value: keys.map(k => `\`${k}\``).join("\n"), inline: false },
+          { name: "Type", value: licenseType, inline: true },
+          { name: "Quantity", value: String(keys.length), inline: true },
+          ...(customerName ? [{ name: "Owner", value: customerName, inline: true }] : []),
+        ]
       );
     } catch (err: any) {
       console.error(err);
