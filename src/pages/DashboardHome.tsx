@@ -29,6 +29,41 @@ export default function DashboardHome() {
 
   useEffect(() => {
     fetchDashboardData();
+
+    // Realtime: listen for new activation logs and send Discord alert
+    const channel = supabase
+      .channel("activation-alerts")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "activation_logs" },
+        async (payload) => {
+          const log = payload.new as Record<string, unknown>;
+          // Look up the license type
+          let type = "unknown";
+          if (log.license_key) {
+            const { data } = await supabase
+              .from("licenses")
+              .select("type")
+              .eq("key", log.license_key as string)
+              .single();
+            if (data) type = data.type;
+          }
+          sendActivationAlert({
+            license_key: (log.license_key as string) || "N/A",
+            type,
+            hwid: log.hwid as string | null,
+            ip: log.ip as string | null,
+            pc_name: (log.pc_name as string | null) || null,
+          });
+          // Refresh dashboard data
+          fetchDashboardData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   async function fetchDashboardData() {
