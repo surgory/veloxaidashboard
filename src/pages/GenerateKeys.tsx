@@ -66,7 +66,6 @@ export default function GenerateKeys() {
               owner_email: customerEmail || null,
               expires_at: getExpiresAt(licenseType),
               uses: 0,
-              notes: notes || null,
             });
             if (retryError) throw retryError;
             keys.push(retryKey);
