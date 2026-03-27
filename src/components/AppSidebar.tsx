@@ -1,19 +1,12 @@
-import { LayoutDashboard, Key, ClipboardList, ScrollText, Ban, Users, Settings, Bell, LogOut } from "lucide-react";
+import { LayoutDashboard, Key, ClipboardList, ScrollText, Ban, Users, Settings, Bell, LogOut, FileText } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
-import { useAuth, OWNER_EMAIL } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarHeader,
-  SidebarFooter,
-  useSidebar,
+  Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
+  SidebarMenu, SidebarMenuButton, SidebarMenuItem,
+  SidebarHeader, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
 
 const navItems = [
@@ -22,6 +15,7 @@ const navItems = [
   { title: "All Licenses", url: "/licenses", icon: ClipboardList, ownerOnly: false },
   { title: "Activation Logs", url: "/logs", icon: ScrollText, ownerOnly: false },
   { title: "Banned HWIDs", url: "/banned", icon: Ban, ownerOnly: false },
+  { title: "Audit Log", url: "/audit", icon: FileText, ownerOnly: false },
   { title: "Admins", url: "/admins", icon: Users, ownerOnly: false },
   { title: "Settings", url: "/settings", icon: Settings, ownerOnly: true },
   { title: "Alerts", url: "/alerts", icon: Bell, ownerOnly: false },
@@ -31,7 +25,7 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
-  const { user, isOwner, signOut } = useAuth();
+  const { isOwner, discord, signOut } = useAuth();
 
   const visibleItems = navItems.filter(item => !item.ownerOnly || isOwner);
 
@@ -79,18 +73,22 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="p-4 border-t border-sidebar-border space-y-3">
-        {!collapsed && user && (
+        {!collapsed && discord && (
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center">
-              <span className="text-foreground text-xs font-medium">
-                {(user.email?.[0] || "U").toUpperCase()}
-              </span>
-            </div>
+            {discord.avatar_url ? (
+              <img src={discord.avatar_url} alt="" className="w-8 h-8 rounded-full" />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center">
+                <span className="text-foreground text-xs font-medium">
+                  {discord.username[0]?.toUpperCase() || "?"}
+                </span>
+              </div>
+            )}
             <div className="min-w-0 flex-1">
               <p className="text-xs font-medium text-foreground truncate">
                 {isOwner ? "Owner" : "Admin"}
               </p>
-              <p className="text-[10px] text-muted-foreground truncate">{user.email}</p>
+              <p className="text-[10px] text-muted-foreground truncate">{discord.username}</p>
             </div>
           </div>
         )}

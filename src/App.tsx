@@ -12,6 +12,7 @@ import BannedHWIDs from "./pages/BannedHWIDs";
 import Admins from "./pages/Admins";
 import SettingsPage from "./pages/SettingsPage";
 import AlertsPage from "./pages/AlertsPage";
+import AuditLogPage from "./pages/AuditLogPage";
 import LoginPage from "./pages/LoginPage";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
@@ -42,6 +43,7 @@ function ProtectedApp() {
         <Route path="/logs" element={<ActivationLogs />} />
         <Route path="/banned" element={<BannedHWIDs />} />
         <Route path="/admins" element={<Admins />} />
+        <Route path="/audit" element={<AuditLogPage />} />
         <Route path="/settings" element={isOwner ? <SettingsPage /> : <OwnerOnly />} />
         <Route path="/alerts" element={<AlertsPage />} />
         <Route path="*" element={<NotFound />} />
