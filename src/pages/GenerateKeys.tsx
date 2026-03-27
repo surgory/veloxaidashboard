@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Copy, Key, Send, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
+import { supabase } from "@/lib/supabase";
 
 function generateKey(): string {
   const chars = "BCDFGHJKLMNPQRSTVWXYZ23456789";
@@ -16,6 +17,13 @@ function generateKey(): string {
     key += chars[Math.floor(Math.random() * chars.length)];
   }
   return key;
+}
+
+function getExpiresAt(type: string): string | null {
+  if (type === "lifetime") return null;
+  const d = new Date();
+  d.setDate(d.getDate() + (type === "premium" ? 365 : 30));
+  return d.toISOString();
 }
 
 export default function GenerateKeys() {
@@ -30,15 +38,58 @@ export default function GenerateKeys() {
 
   const handleGenerate = async () => {
     setIsGenerating(true);
-    await new Promise(r => setTimeout(r, 600));
-    const qty = parseInt(quantity) || 1;
-    const keys = Array.from({ length: qty }, () => generateKey());
-    setGeneratedKeys(keys);
-    setIsGenerating(false);
-    if (keys.length === 1) {
-      navigator.clipboard.writeText(keys[0]);
+    try {
+      const qty = Math.min(Math.max(parseInt(quantity) || 1, 1), 100);
+      const keys: string[] = [];
+
+      for (let i = 0; i < qty; i++) {
+        const key = generateKey();
+        const { error } = await supabase.from("licenses").insert({
+          key,
+          type: licenseType,
+          status: "active",
+          owner_name: customerName || null,
+          owner_email: customerEmail || null,
+          expires_at: getExpiresAt(licenseType),
+          uses: 0,
+          notes: notes || null,
+        });
+
+        if (error) {
+          // Key collision — retry once
+          if (error.code === "23505") {
+            const retryKey = generateKey();
+            const { error: retryError } = await supabase.from("licenses").insert({
+              key: retryKey,
+              type: licenseType,
+              status: "active",
+              owner_name: customerName || null,
+              owner_email: customerEmail || null,
+              expires_at: getExpiresAt(licenseType),
+              uses: 0,
+              notes: notes || null,
+            });
+            if (retryError) throw retryError;
+            keys.push(retryKey);
+          } else {
+            throw error;
+          }
+        } else {
+          keys.push(key);
+        }
+      }
+
+      setGeneratedKeys(keys);
+      if (keys.length === 1) {
+        navigator.clipboard.writeText(keys[0]);
+      }
+      toast({ title: `${keys.length} key(s) generated & saved`, description: keys.length === 1 ? "Auto-copied to clipboard" : `Type: ${licenseType}` });
+    } catch (err: any) {
+      console.error(err);
+      toast({ title: "Error generating keys", description: err.message || "Something went wrong", variant: "destructive" });
+    } finally {
+      setIsGenerating(false);
     }
-    toast({ title: `${qty} key(s) generated`, description: keys.length === 1 ? "Auto-copied to clipboard" : `Type: ${licenseType}` });
   };
 
   const copyKey = (key: string) => {
@@ -50,7 +101,7 @@ export default function GenerateKeys() {
     <div className="space-y-6 max-w-2xl">
       <div>
         <h1 className="text-2xl font-display font-bold">Generate Keys</h1>
-        <p className="text-sm text-muted-foreground mt-1">Create new license keys for customers</p>
+        <p className="text-sm text-muted-foreground mt-1">Create new license keys and save them to the database</p>
       </div>
 
       <Card className="glass-card border-border/50">
@@ -95,11 +146,6 @@ export default function GenerateKeys() {
               {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Key className="h-4 w-4" />}
               {isGenerating ? "Generating..." : "Generate Key"}
             </Button>
-            {customerEmail && (
-              <Button variant="outline" className="gap-2 btn-click">
-                <Send className="h-4 w-4" /> Email to Customer
-              </Button>
-            )}
           </div>
         </CardContent>
       </Card>
@@ -113,9 +159,7 @@ export default function GenerateKeys() {
             <CardContent className="space-y-2">
               {generatedKeys.map((key) => (
                 <div key={key} className="flex items-center justify-between bg-muted rounded-lg px-4 py-3 transition-all duration-200 hover:bg-foreground/10">
-                  <code className="license-key-block" onClick={() => copyKey(key)}>
-                    {key}
-                  </code>
+                  <code className="license-key-block" onClick={() => copyKey(key)}>{key}</code>
                   <Button variant="ghost" size="icon" onClick={() => copyKey(key)} className="btn-click">
                     <Copy className="h-4 w-4" />
                   </Button>
