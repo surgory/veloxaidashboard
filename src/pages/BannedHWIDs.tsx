@@ -10,6 +10,7 @@ import { Ban, Unlock, Loader2, RefreshCw, Plus } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
+import { sendDiscordNotification } from "@/lib/discord";
 import type { BannedHWID } from "@/lib/types";
 
 export default function BannedHWIDs() {
@@ -43,7 +44,9 @@ export default function BannedHWIDs() {
       toast({ title: "Failed to unban", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "HWID unbanned" });
+      const unbannedHwid = banned.find(b => b.id === id)?.hwid;
       setBanned(prev => prev.filter(b => b.id !== id));
+      if (unbannedHwid) sendDiscordNotification("🔓 HWID Unbanned", `HWID \`${unbannedHwid}\` has been unbanned`, 0x00ff00);
     }
     setActionLoading(null);
   }
@@ -63,6 +66,7 @@ export default function BannedHWIDs() {
       toast({ title: "Failed to ban HWID", description: error.code === "23505" ? "This HWID is already banned" : error.message, variant: "destructive" });
     } else {
       toast({ title: "HWID banned", description: newHwid });
+      sendDiscordNotification("🔨 HWID Banned", `HWID \`${newHwid.trim()}\` banned\nReason: ${newReason.trim() || "No reason given"}`, 0xff6600);
       setNewHwid("");
       setNewReason("");
       setDialogOpen(false);

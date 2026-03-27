@@ -9,6 +9,7 @@ import { Copy, Search, Ban, Clock, Pencil, Trash2, X, RefreshCw, Loader2, Key } 
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/lib/supabase";
+import { sendDiscordNotification } from "@/lib/discord";
 import type { License } from "@/lib/types";
 
 export default function AllLicenses() {
@@ -43,6 +44,7 @@ export default function AllLicenses() {
     } else {
       toast({ title: "License revoked", description: key });
       setLicenses(prev => prev.map(l => l.key === key ? { ...l, status: "revoked" } : l));
+      sendDiscordNotification("🚫 License Revoked", `Key \`${key}\` has been revoked`, 0xff0000);
     }
     setActionLoading(null);
   }

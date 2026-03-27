@@ -8,6 +8,7 @@ import { Copy, Key, Send, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { supabase } from "@/lib/supabase";
+import { sendDiscordNotification } from "@/lib/discord";
 
 function generateKey(): string {
   const chars = "BCDFGHJKLMNPQRSTVWXYZ23456789";
@@ -80,6 +81,12 @@ export default function GenerateKeys() {
         navigator.clipboard.writeText(keys[0]);
       }
       toast({ title: `${keys.length} key(s) generated & saved`, description: keys.length === 1 ? "Auto-copied to clipboard" : `Type: ${licenseType}` });
+      // Discord notification
+      sendDiscordNotification(
+        "🔑 New License Key Generated",
+        `**${keys.length}** ${licenseType} key(s) created${customerName ? ` for **${customerName}**` : ""}\n\`${keys.join("`, `")}\``,
+        0x00ff00
+      );
     } catch (err: any) {
       console.error(err);
       toast({ title: "Error generating keys", description: err.message || "Something went wrong", variant: "destructive" });

@@ -1,6 +1,8 @@
-import { LayoutDashboard, Key, ClipboardList, ScrollText, Ban, Users, Settings, Bell } from "lucide-react";
+import { LayoutDashboard, Key, ClipboardList, ScrollText, Ban, Users, Settings, Bell, LogOut } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
+import { useAuth, OWNER_EMAIL } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
 import {
   Sidebar,
   SidebarContent,
@@ -15,20 +17,23 @@ import {
 } from "@/components/ui/sidebar";
 
 const navItems = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Generate Keys", url: "/generate", icon: Key },
-  { title: "All Licenses", url: "/licenses", icon: ClipboardList },
-  { title: "Activation Logs", url: "/logs", icon: ScrollText },
-  { title: "Banned HWIDs", url: "/banned", icon: Ban },
-  { title: "Admins", url: "/admins", icon: Users },
-  { title: "Settings", url: "/settings", icon: Settings },
-  { title: "Alerts", url: "/alerts", icon: Bell },
+  { title: "Dashboard", url: "/", icon: LayoutDashboard, ownerOnly: false },
+  { title: "Generate Keys", url: "/generate", icon: Key, ownerOnly: false },
+  { title: "All Licenses", url: "/licenses", icon: ClipboardList, ownerOnly: false },
+  { title: "Activation Logs", url: "/logs", icon: ScrollText, ownerOnly: false },
+  { title: "Banned HWIDs", url: "/banned", icon: Ban, ownerOnly: false },
+  { title: "Admins", url: "/admins", icon: Users, ownerOnly: false },
+  { title: "Settings", url: "/settings", icon: Settings, ownerOnly: true },
+  { title: "Alerts", url: "/alerts", icon: Bell, ownerOnly: false },
 ];
 
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
+  const { user, isOwner, signOut } = useAuth();
+
+  const visibleItems = navItems.filter(item => !item.ownerOnly || isOwner);
 
   return (
     <Sidebar collapsible="icon">
@@ -50,7 +55,7 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.map((item) => {
+              {visibleItems.map((item) => {
                 const isActive = location.pathname === item.url;
                 return (
                   <SidebarMenuItem key={item.title}>
@@ -73,18 +78,31 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-4 border-t border-sidebar-border">
-        {!collapsed && (
+      <SidebarFooter className="p-4 border-t border-sidebar-border space-y-3">
+        {!collapsed && user && (
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center">
-              <span className="text-foreground text-xs font-medium">A</span>
+              <span className="text-foreground text-xs font-medium">
+                {(user.email?.[0] || "U").toUpperCase()}
+              </span>
             </div>
-            <div className="min-w-0">
-              <p className="text-xs font-medium text-foreground truncate">Admin</p>
-              <p className="text-[10px] text-muted-foreground truncate">admin@veloxai.site</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-medium text-foreground truncate">
+                {isOwner ? "Owner" : "Admin"}
+              </p>
+              <p className="text-[10px] text-muted-foreground truncate">{user.email}</p>
             </div>
           </div>
         )}
+        <Button
+          variant="ghost"
+          size={collapsed ? "icon" : "sm"}
+          onClick={signOut}
+          className="w-full text-muted-foreground hover:text-foreground btn-click gap-2"
+        >
+          <LogOut className="h-4 w-4 shrink-0" />
+          {!collapsed && <span>Sign Out</span>}
+        </Button>
       </SidebarFooter>
     </Sidebar>
   );
