@@ -4,6 +4,7 @@ import { Key, Shield, Crown, Clock, Users, Activity, DollarSign, Zap } from "luc
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from "recharts";
 import { supabase } from "@/lib/supabase";
+import { sendActivationAlert } from "@/lib/discord";
 
 interface Metrics {
   totalLicenses: number;
