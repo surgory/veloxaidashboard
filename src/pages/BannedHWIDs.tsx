@@ -66,6 +66,7 @@ export default function BannedHWIDs() {
       toast({ title: "Failed to ban HWID", description: error.code === "23505" ? "This HWID is already banned" : error.message, variant: "destructive" });
     } else {
       toast({ title: "HWID banned", description: newHwid });
+      sendDiscordNotification("🔨 HWID Banned", `HWID \`${newHwid.trim()}\` banned\nReason: ${newReason.trim() || "No reason given"}`, 0xff6600);
       setNewHwid("");
       setNewReason("");
       setDialogOpen(false);
