@@ -10,6 +10,7 @@ import { Ban, Unlock, Loader2, RefreshCw, Plus } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
+import { sendDiscordNotification } from "@/lib/discord";
 import type { BannedHWID } from "@/lib/types";
 
 export default function BannedHWIDs() {
