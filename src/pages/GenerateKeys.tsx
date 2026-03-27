@@ -31,7 +31,6 @@ export default function GenerateKeys() {
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [quantity, setQuantity] = useState("1");
-  const [notes, setNotes] = useState("");
   const [generatedKeys, setGeneratedKeys] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
 
