@@ -8,6 +8,7 @@ import { Copy, Key, Send, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { supabase } from "@/lib/supabase";
+import { sendDiscordNotification } from "@/lib/discord";
 
 function generateKey(): string {
   const chars = "BCDFGHJKLMNPQRSTVWXYZ23456789";
