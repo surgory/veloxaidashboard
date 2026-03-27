@@ -133,10 +133,6 @@ export default function GenerateKeys() {
             <Label>Quantity</Label>
             <Input type="number" min="1" max="100" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
           </div>
-          <div className="space-y-2">
-            <Label>Notes</Label>
-            <Textarea placeholder="Internal notes about this sale..." value={notes} onChange={(e) => setNotes(e.target.value)} />
-          </div>
           <div className="flex gap-2 pt-2">
             <Button onClick={handleGenerate} disabled={isGenerating} className="gap-2 btn-click">
               {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Key className="h-4 w-4" />}
