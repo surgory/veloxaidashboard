@@ -44,6 +44,7 @@ export default function AllLicenses() {
     } else {
       toast({ title: "License revoked", description: key });
       setLicenses(prev => prev.map(l => l.key === key ? { ...l, status: "revoked" } : l));
+      sendDiscordNotification("🚫 License Revoked", `Key \`${key}\` has been revoked`, 0xff0000);
     }
     setActionLoading(null);
   }
