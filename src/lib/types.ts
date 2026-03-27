@@ -10,7 +10,6 @@ export interface License {
   created_at: string | null;
   last_used: string | null;
   uses: number;
-  notes: string | null;
 }
 
 export interface ActivationLog {

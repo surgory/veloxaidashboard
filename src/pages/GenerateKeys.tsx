@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { Copy, Key, Send, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
@@ -32,7 +31,6 @@ export default function GenerateKeys() {
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [quantity, setQuantity] = useState("1");
-  const [notes, setNotes] = useState("");
   const [generatedKeys, setGeneratedKeys] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -52,7 +50,6 @@ export default function GenerateKeys() {
           owner_email: customerEmail || null,
           expires_at: getExpiresAt(licenseType),
           uses: 0,
-          notes: notes || null,
         });
 
         if (error) {
@@ -67,7 +64,6 @@ export default function GenerateKeys() {
               owner_email: customerEmail || null,
               expires_at: getExpiresAt(licenseType),
               uses: 0,
-              notes: notes || null,
             });
             if (retryError) throw retryError;
             keys.push(retryKey);
@@ -136,10 +132,6 @@ export default function GenerateKeys() {
           <div className="space-y-2">
             <Label>Quantity</Label>
             <Input type="number" min="1" max="100" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label>Notes</Label>
-            <Textarea placeholder="Internal notes about this sale..." value={notes} onChange={(e) => setNotes(e.target.value)} />
           </div>
           <div className="flex gap-2 pt-2">
             <Button onClick={handleGenerate} disabled={isGenerating} className="gap-2 btn-click">
