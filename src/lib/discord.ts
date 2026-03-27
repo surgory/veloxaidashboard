@@ -1,68 +1,115 @@
-/**
- * Send a Discord webhook embed with fields.
- */
-export async function sendDiscordNotification(
-  title: string,
-  description: string,
-  color: number = 0xffffff,
-  fields?: { name: string; value: string; inline?: boolean }[]
-): Promise<boolean> {
+const SEPARATOR = "━━━━━━━━━━━━━━━━━━━━━";
+
+function timestamp(): string {
+  return new Date().toLocaleString("en-US", {
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false,
+  });
+}
+
+function getWebhookUrl(): string | null {
   try {
     const settings = localStorage.getItem("velox_settings");
-    if (!settings) return false;
-
+    if (!settings) return null;
     const parsed = JSON.parse(settings);
-    const webhookUrl = parsed.discordWebhook;
+    const url = parsed.discordWebhook;
+    if (!url || !url.startsWith("https://discord.com/api/webhooks/")) return null;
+    return url;
+  } catch {
+    return null;
+  }
+}
 
-    if (!webhookUrl || !webhookUrl.startsWith("https://discord.com/api/webhooks/")) {
-      return false;
-    }
-
-    const embed: Record<string, unknown> = {
-      title,
-      description,
-      color,
-      timestamp: new Date().toISOString(),
-      footer: { text: "VeloxAI License Manager" },
-    };
-
-    if (fields && fields.length > 0) {
-      embed.fields = fields;
-    }
-
-    const response = await fetch(webhookUrl, {
+async function sendEmbed(description: string, color: number): Promise<boolean> {
+  const webhookUrl = getWebhookUrl();
+  if (!webhookUrl) return false;
+  try {
+    const res = await fetch(webhookUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ embeds: [embed] }),
+      body: JSON.stringify({
+        embeds: [{
+          description,
+          color,
+          timestamp: new Date().toISOString(),
+          footer: { text: "VeloxAI License Manager" },
+        }],
+      }),
     });
-
-    return response.ok;
+    return res.ok;
   } catch (err) {
     console.error("Discord webhook failed:", err);
     return false;
   }
 }
 
-/**
- * Send activation alert to Discord
- */
-export async function sendActivationAlert(log: {
-  license_key: string;
-  type?: string;
-  hwid?: string | null;
-  ip?: string | null;
-  pc_name?: string | null;
+// 1. New License Activation (Green)
+export function sendActivationAlert(data: {
+  key: string; type: string; hwid: string; pc_name: string; ip: string;
 }): Promise<boolean> {
-  return sendDiscordNotification(
-    "🔐 NEW ACTIVATION",
-    "",
-    0x00ff88,
-    [
-      { name: "Key", value: `\`${log.license_key}\``, inline: false },
-      { name: "Type", value: log.type || "unknown", inline: true },
-      { name: "HWID", value: log.hwid || "N/A", inline: false },
-      { name: "IP", value: log.ip || "N/A", inline: true },
-      { name: "PC", value: log.pc_name || "N/A", inline: true },
-    ]
+  return sendEmbed(
+    `🔐 **NEW ACTIVATION**\n${SEPARATOR}\n**Key:** ${data.key}\n**Type:** ${data.type}\n**HWID:** ${data.hwid}\n**PC:** ${data.pc_name}\n**IP:** ${data.ip}\n${SEPARATOR}\n🕐 ${timestamp()}`,
+    0x00ff00
+  );
+}
+
+// 2. Invalid License Attempt (Yellow)
+export function sendInvalidAttemptAlert(data: {
+  key: string; hwid: string; reason: string; pc_name: string; ip: string;
+}): Promise<boolean> {
+  return sendEmbed(
+    `⚠️ **INVALID ATTEMPT**\n${SEPARATOR}\n**Key:** ${data.key}\n**HWID:** ${data.hwid}\n**Reason:** ${data.reason}\n**PC:** ${data.pc_name}\n**IP:** ${data.ip}\n${SEPARATOR}\n🕐 ${timestamp()}`,
+    0xffff00
+  );
+}
+
+// 3. Crack Attempt Detected (Red)
+export function sendCrackAttemptAlert(data: {
+  detection_type: string; hwid: string; pc_name: string; ip: string; tool: string;
+}): Promise<boolean> {
+  return sendEmbed(
+    `🚨 **CRACK ATTEMPT DETECTED**\n${SEPARATOR}\n**Type:** ${data.detection_type}\n**HWID:** ${data.hwid}\n**PC:** ${data.pc_name}\n**IP:** ${data.ip}\n**Tool:** ${data.tool}\n${SEPARATOR}\n⚠️ Potential reverse engineering attempt\n🕐 ${timestamp()}`,
+    0xff0000
+  );
+}
+
+// 4. License Revoked (Orange)
+export function sendRevokedAlert(data: {
+  key: string; owner_name: string; admin_name: string; reason?: string;
+}): Promise<boolean> {
+  return sendEmbed(
+    `❌ **LICENSE REVOKED**\n${SEPARATOR}\n**Key:** ${data.key}\n**Owner:** ${data.owner_name}\n**Revoked by:** ${data.admin_name}\n**Reason:** ${data.reason || "Manual revocation"}\n${SEPARATOR}\n🕐 ${timestamp()}`,
+    0xff6600
+  );
+}
+
+// 5. Key Generated (Blue)
+export function sendKeyGeneratedAlert(data: {
+  key: string; type: string; owner_name: string; owner_email: string;
+  expiry: string; admin_name: string; admin_id: string;
+}): Promise<boolean> {
+  return sendEmbed(
+    `🟢 **KEY GENERATED**\n${SEPARATOR}\n**Key:** ${data.key}\n**Type:** ${data.type}\n**Owner:** ${data.owner_name || "N/A"}\n**Email:** ${data.owner_email || "N/A"}\n**Expires:** ${data.expiry}\n**Generated by:** ${data.admin_name} (${data.admin_id})\n${SEPARATOR}\n🕐 ${timestamp()}`,
+    0x0099ff
+  );
+}
+
+// 6. HWID Banned (Dark Red)
+export function sendHwidBannedAlert(data: {
+  hwid: string; reason: string; admin_name: string; admin_id: string; duration: string;
+}): Promise<boolean> {
+  return sendEmbed(
+    `⛔ **HWID BANNED**\n${SEPARATOR}\n**HWID:** ${data.hwid}\n**Reason:** ${data.reason || "No reason given"}\n**Banned by:** ${data.admin_name} (${data.admin_id})\n**Duration:** ${data.duration}\n${SEPARATOR}\n🕐 ${timestamp()}`,
+    0x990000
+  );
+}
+
+// 7. HWID Unbanned (Green)
+export function sendHwidUnbannedAlert(data: {
+  hwid: string; admin_name: string; admin_id: string;
+}): Promise<boolean> {
+  return sendEmbed(
+    `🔓 **HWID UNBANNED**\n${SEPARATOR}\n**HWID:** ${data.hwid}\n**Unbanned by:** ${data.admin_name} (${data.admin_id})\n${SEPARATOR}\n🕐 ${timestamp()}`,
+    0x00ff00
   );
 }

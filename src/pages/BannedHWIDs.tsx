@@ -6,15 +6,18 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Ban, Unlock, Loader2, RefreshCw, Plus } from "lucide-react";
+import { Ban, Unlock, Loader2, RefreshCw } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
-import { sendDiscordNotification } from "@/lib/discord";
+import { sendHwidBannedAlert, sendHwidUnbannedAlert } from "@/lib/discord";
+import { logAuditAction } from "@/lib/audit";
+import { useAuth } from "@/contexts/AuthContext";
 import type { BannedHWID } from "@/lib/types";
 
 export default function BannedHWIDs() {
   const { toast } = useToast();
+  const { discord } = useAuth();
   const [banned, setBanned] = useState<BannedHWID[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
@@ -23,53 +26,54 @@ export default function BannedHWIDs() {
   const [newReason, setNewReason] = useState("");
   const [banning, setBanning] = useState(false);
 
-  useEffect(() => {
-    fetchBanned();
-  }, []);
+  useEffect(() => { fetchBanned(); }, []);
 
   async function fetchBanned() {
     setLoading(true);
     const { data, error } = await supabase.from("banned_hwids").select("*").order("created_at", { ascending: false });
-    if (error) {
-      toast({ title: "Error loading banned HWIDs", description: error.message, variant: "destructive" });
-    }
+    if (error) toast({ title: "Error loading banned HWIDs", description: error.message, variant: "destructive" });
     setBanned(data || []);
     setLoading(false);
   }
 
   async function unbanHwid(id: number) {
     setActionLoading(id);
+    const unbannedHwid = banned.find(b => b.id === id)?.hwid;
     const { error } = await supabase.from("banned_hwids").delete().eq("id", id);
     if (error) {
       toast({ title: "Failed to unban", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "HWID unbanned" });
-      const unbannedHwid = banned.find(b => b.id === id)?.hwid;
       setBanned(prev => prev.filter(b => b.id !== id));
-      if (unbannedHwid) sendDiscordNotification("🔓 HWID Unbanned", `HWID \`${unbannedHwid}\` has been unbanned`, 0x00ff00);
+      if (unbannedHwid) {
+        sendHwidUnbannedAlert({ hwid: unbannedHwid, admin_name: discord?.username || "Unknown", admin_id: discord?.id || "Unknown" });
+        logAuditAction(discord?.id || "unknown", discord?.username || "unknown", "unban", unbannedHwid);
+      }
     }
     setActionLoading(null);
   }
 
   async function banHwid() {
-    if (!newHwid.trim()) {
-      toast({ title: "HWID is required", variant: "destructive" });
-      return;
-    }
+    if (!newHwid.trim()) { toast({ title: "HWID is required", variant: "destructive" }); return; }
     setBanning(true);
     const { error } = await supabase.from("banned_hwids").insert({
       hwid: newHwid.trim(),
       reason: newReason.trim() || null,
-      banned_by: "Admin",
+      banned_by: discord?.username || "Admin",
+      banned_by_discord_id: discord?.id || null,
+      banned_by_discord_name: discord?.username || null,
     });
     if (error) {
       toast({ title: "Failed to ban HWID", description: error.code === "23505" ? "This HWID is already banned" : error.message, variant: "destructive" });
     } else {
       toast({ title: "HWID banned", description: newHwid });
-      sendDiscordNotification("🔨 HWID Banned", `HWID \`${newHwid.trim()}\` banned\nReason: ${newReason.trim() || "No reason given"}`, 0xff6600);
-      setNewHwid("");
-      setNewReason("");
-      setDialogOpen(false);
+      sendHwidBannedAlert({
+        hwid: newHwid.trim(), reason: newReason.trim() || "No reason given",
+        admin_name: discord?.username || "Unknown", admin_id: discord?.id || "Unknown",
+        duration: "Permanent",
+      });
+      logAuditAction(discord?.id || "unknown", discord?.username || "unknown", "ban", newHwid.trim(), `Reason: ${newReason.trim() || "No reason"}`);
+      setNewHwid(""); setNewReason(""); setDialogOpen(false);
       fetchBanned();
     }
     setBanning(false);
@@ -143,12 +147,10 @@ export default function BannedHWIDs() {
                   <TableRow key={b.id} className="interactive-row border-border/30">
                     <TableCell className="font-mono text-xs text-foreground/70">{b.hwid}</TableCell>
                     <TableCell className="text-sm">{b.reason || "—"}</TableCell>
-                    <TableCell className="hidden md:table-cell text-sm text-muted-foreground">{b.banned_by || "—"}</TableCell>
+                    <TableCell className="hidden md:table-cell text-sm text-muted-foreground">{b.banned_by_discord_name || b.banned_by || "—"}</TableCell>
                     <TableCell className="hidden md:table-cell text-sm text-muted-foreground">{new Date(b.created_at).toLocaleDateString()}</TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="bg-accent/50 text-foreground/70 border-border">
-                        {formatDate(b.expires_at)}
-                      </Badge>
+                      <Badge variant="outline" className="bg-accent/50 text-foreground/70 border-border">{formatDate(b.expires_at)}</Badge>
                     </TableCell>
                     <TableCell>
                       <Button variant="outline" size="sm" className="gap-1 text-xs btn-click" disabled={actionLoading === b.id} onClick={() => unbanHwid(b.id)}>

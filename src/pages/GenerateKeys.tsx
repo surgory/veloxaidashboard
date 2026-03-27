@@ -4,11 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Copy, Key, Send, Loader2 } from "lucide-react";
+import { Copy, Key, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { supabase } from "@/lib/supabase";
-import { sendDiscordNotification } from "@/lib/discord";
+import { sendKeyGeneratedAlert } from "@/lib/discord";
+import { logAuditAction } from "@/lib/audit";
+import { useAuth } from "@/contexts/AuthContext";
 
 function generateKey(): string {
   const chars = "BCDFGHJKLMNPQRSTVWXYZ23456789";
@@ -26,8 +28,14 @@ function getExpiresAt(type: string): string | null {
   return d.toISOString();
 }
 
+function getExpiryLabel(type: string): string {
+  if (type === "lifetime") return "Never";
+  return type === "premium" ? "365 days" : "30 days";
+}
+
 export default function GenerateKeys() {
   const { toast } = useToast();
+  const { discord } = useAuth();
   const [licenseType, setLicenseType] = useState("premium");
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
@@ -51,20 +59,19 @@ export default function GenerateKeys() {
           owner_email: customerEmail || null,
           expires_at: getExpiresAt(licenseType),
           uses: 0,
+          generated_by_discord_id: discord?.id || null,
+          generated_by_discord_name: discord?.username || null,
         });
 
         if (error) {
-          // Key collision — retry once
           if (error.code === "23505") {
             const retryKey = generateKey();
             const { error: retryError } = await supabase.from("licenses").insert({
-              key: retryKey,
-              type: licenseType,
-              status: "active",
-              owner_name: customerName || null,
-              owner_email: customerEmail || null,
-              expires_at: getExpiresAt(licenseType),
-              uses: 0,
+              key: retryKey, type: licenseType, status: "active",
+              owner_name: customerName || null, owner_email: customerEmail || null,
+              expires_at: getExpiresAt(licenseType), uses: 0,
+              generated_by_discord_id: discord?.id || null,
+              generated_by_discord_name: discord?.username || null,
             });
             if (retryError) throw retryError;
             keys.push(retryKey);
@@ -77,22 +84,25 @@ export default function GenerateKeys() {
       }
 
       setGeneratedKeys(keys);
-      if (keys.length === 1) {
-        navigator.clipboard.writeText(keys[0]);
-      }
+      if (keys.length === 1) navigator.clipboard.writeText(keys[0]);
       toast({ title: `${keys.length} key(s) generated & saved`, description: keys.length === 1 ? "Auto-copied to clipboard" : `Type: ${licenseType}` });
-      // Discord notification
-      sendDiscordNotification(
-        "🔑 NEW LICENSE GENERATED",
-        "",
-        0x00ff00,
-        [
-          { name: "Keys", value: keys.map(k => `\`${k}\``).join("\n"), inline: false },
-          { name: "Type", value: licenseType, inline: true },
-          { name: "Quantity", value: String(keys.length), inline: true },
-          ...(customerName ? [{ name: "Owner", value: customerName, inline: true }] : []),
-        ]
-      );
+
+      // Discord + Audit for each key
+      for (const key of keys) {
+        sendKeyGeneratedAlert({
+          key, type: licenseType,
+          owner_name: customerName || "N/A",
+          owner_email: customerEmail || "N/A",
+          expiry: getExpiryLabel(licenseType),
+          admin_name: discord?.username || "Unknown",
+          admin_id: discord?.id || "Unknown",
+        });
+        logAuditAction(
+          discord?.id || "unknown", discord?.username || "unknown",
+          "generate", key,
+          `Type: ${licenseType}, Owner: ${customerName || "N/A"}`
+        );
+      }
     } catch (err: any) {
       console.error(err);
       toast({ title: "Error generating keys", description: err.message || "Something went wrong", variant: "destructive" });
@@ -116,8 +126,7 @@ export default function GenerateKeys() {
       <Card className="glass-card border-border/50">
         <CardHeader>
           <CardTitle className="text-base font-display flex items-center gap-2">
-            <Key className="h-4 w-4 text-foreground/70" />
-            New License Key
+            <Key className="h-4 w-4 text-foreground/70" /> New License Key
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">

@@ -2,20 +2,38 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import { supabase } from "@/lib/supabase";
 import type { User, Session } from "@supabase/supabase-js";
 
-// The owner email — only this account can access Settings
 export const OWNER_EMAIL = "admin@veloxai.site";
+
+interface DiscordProfile {
+  id: string;
+  username: string;
+  avatar_url: string | null;
+  email: string | null;
+}
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
   isOwner: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
+  discord: DiscordProfile | null;
+  signInWithDiscord: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+function extractDiscordProfile(user: User | null): DiscordProfile | null {
+  if (!user) return null;
+  const meta = user.user_metadata;
+  if (!meta) return null;
+  return {
+    id: meta.provider_id || meta.sub || user.id,
+    username: meta.full_name || meta.name || meta.preferred_username || "Unknown",
+    avatar_url: meta.avatar_url || null,
+    email: user.email || meta.email || null,
+  };
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -23,14 +41,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
     });
 
-    // Then check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -40,20 +56,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
+  const discord = extractDiscordProfile(user);
   const isOwner = user?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
 
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error: error as Error | null };
-  };
-
-  const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { emailRedirectTo: window.location.origin },
+  const signInWithDiscord = async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: "discord",
+      options: {
+        scopes: "identify email guilds",
+        redirectTo: window.location.origin,
+      },
     });
-    return { error: error as Error | null };
   };
 
   const signOut = async () => {
@@ -61,7 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, isOwner, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, isOwner, discord, signInWithDiscord, signOut }}>
       {children}
     </AuthContext.Provider>
   );
