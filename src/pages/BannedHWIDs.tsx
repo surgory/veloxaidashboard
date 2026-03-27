@@ -44,7 +44,9 @@ export default function BannedHWIDs() {
       toast({ title: "Failed to unban", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "HWID unbanned" });
+      const unbannedHwid = banned.find(b => b.id === id)?.hwid;
       setBanned(prev => prev.filter(b => b.id !== id));
+      if (unbannedHwid) sendDiscordNotification("🔓 HWID Unbanned", `HWID \`${unbannedHwid}\` has been unbanned`, 0x00ff00);
     }
     setActionLoading(null);
   }
