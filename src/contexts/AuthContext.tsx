@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import type { User, Session } from "@supabase/supabase-js";
 
 export const OWNER_EMAIL = "admin@veloxai.site";
+export const OWNER_DISCORD_ID = "1044757372498894849";
 
 interface DiscordProfile {
   id: string;
@@ -57,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const discord = extractDiscordProfile(user);
-  const isOwner = user?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
+  const isOwner = discord?.id === OWNER_DISCORD_ID || user?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
 
   const signInWithDiscord = async () => {
     await supabase.auth.signInWithOAuth({
