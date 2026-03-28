@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const discord = extractDiscordProfile(user);
-  const isOwner = user?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
+  const isOwner = discord?.id === OWNER_DISCORD_ID || user?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
 
   const signInWithDiscord = async () => {
     await supabase.auth.signInWithOAuth({
