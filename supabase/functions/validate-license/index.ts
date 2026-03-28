@@ -125,7 +125,7 @@ async function handleValidate(
   if (!license.hwid) {
     const { error: updateError } = await supabase
       .from("licenses")
-      .update({ hwid, uses: (license.uses || 0) + 1, last_used: new Date().toISOString() })
+      .update({ hwid, last_used: new Date().toISOString() })
       .eq("key", key);
 
     if (updateError) {
@@ -133,12 +133,15 @@ async function handleValidate(
       return jsonResponse({ success: false, message: "Failed to activate license" }, 500);
     }
   } else {
-    // Update last_used and uses
+    // Update last_used
     await supabase
       .from("licenses")
-      .update({ uses: (license.uses || 0) + 1, last_used: new Date().toISOString() })
+      .update({ last_used: new Date().toISOString() })
       .eq("key", key);
   }
+
+  // Atomic increment of uses counter
+  await supabase.rpc("increment_license_uses", { license_key: key });
 
   // 7. Log successful activation
   await logActivation(supabase, key, hwid, ip, "activation", pcName);
@@ -185,11 +188,11 @@ async function handleHeartbeat(
   // Check if HWID is banned
   const { data: banned } = await supabase
     .from("banned_hwids")
-    .select("id")
+    .select("id, expires_at")
     .eq("hwid", hwid)
     .maybeSingle();
 
-  if (banned) {
+  if (banned && (!banned.expires_at || new Date(banned.expires_at) > new Date())) {
     return jsonResponse({ success: false, message: "Hardware ID is banned" });
   }
 
