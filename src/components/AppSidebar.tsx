@@ -17,7 +17,7 @@ const navItems = [
   { title: "Banned HWIDs", url: "/banned", icon: Ban, ownerOnly: false },
   { title: "Audit Log", url: "/audit", icon: FileText, ownerOnly: false },
   { title: "Admins", url: "/admins", icon: Users, ownerOnly: false },
-  { title: "Settings", url: "/settings", icon: Settings, ownerOnly: true },
+  { title: "Settings", url: "/settings", icon: Settings, ownerOnly: false },
   { title: "Alerts", url: "/alerts", icon: Bell, ownerOnly: false },
 ];
 
