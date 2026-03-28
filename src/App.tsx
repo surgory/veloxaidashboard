@@ -44,7 +44,7 @@ function ProtectedApp() {
         <Route path="/banned" element={<BannedHWIDs />} />
         <Route path="/admins" element={<Admins />} />
         <Route path="/audit" element={<AuditLogPage />} />
-        <Route path="/settings" element={isOwner ? <SettingsPage /> : <OwnerOnly />} />
+        <Route path="/settings" element={<SettingsPage />} />
         <Route path="/alerts" element={<AlertsPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
