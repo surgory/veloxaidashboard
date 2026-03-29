@@ -68,7 +68,7 @@ export default function GenerateKeys() {
             const retryKey = generateKey();
             const { error: retryError } = await supabase.from("licenses").insert({
               key: retryKey, type: licenseType, status: "active",
-              owner_name: customerName || null, owner_email: customerEmail || null,
+              owner_name: customerName || null, owner_discord_id: customerDiscordId || null,
               expires_at: getExpiresAt(licenseType), uses: 0,
               generated_by_discord_id: discord?.id || null,
               generated_by_discord_name: discord?.username || null,
