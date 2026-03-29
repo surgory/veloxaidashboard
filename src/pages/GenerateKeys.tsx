@@ -147,8 +147,8 @@ export default function GenerateKeys() {
               <Input placeholder="John Doe" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label>Customer Email</Label>
-              <Input type="email" placeholder="john@example.com" value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} />
+              <Label>Customer Discord ID</Label>
+              <Input placeholder="e.g. 352614799290531840" value={customerDiscordId} onChange={(e) => setCustomerDiscordId(e.target.value)} />
             </div>
           </div>
           <div className="space-y-2">
