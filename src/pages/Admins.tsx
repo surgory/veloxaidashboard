@@ -48,6 +48,7 @@ export function isAuthorizedAdmin(discordId: string | undefined | null): boolean
 
 export default function Admins() {
   const { toast } = useToast();
+  const { discord } = useAuth();
   const [admins, setAdmins] = useState<Admin[]>(loadAdmins);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAdmin, setEditingAdmin] = useState<Admin | null>(null);
