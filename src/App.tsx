@@ -31,7 +31,7 @@ function ProtectedApp() {
     );
   }
 
-  if (!user) {
+  if (!user || !isAuthorizedAdmin(discord?.id)) {
     return <LoginPage />;
   }
 
