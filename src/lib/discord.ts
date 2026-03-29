@@ -113,3 +113,25 @@ export function sendHwidUnbannedAlert(data: {
     0x00ff00
   );
 }
+
+// 8. Admin Access Granted (Purple)
+export function sendAdminGrantedAlert(data: {
+  username: string; discord_id: string; role: string;
+  granted_by_name: string; granted_by_id: string;
+}): Promise<boolean> {
+  return sendEmbed(
+    `🛡️ **ADMIN ACCESS GRANTED**\n${SEPARATOR}\n**Username:** ${data.username}\n**Discord ID:** ${data.discord_id}\n**Role:** ${data.role}\n**Granted by:** ${data.granted_by_name} (${data.granted_by_id})\n${SEPARATOR}\n🕐 ${timestamp()}`,
+    0x9b59b6
+  );
+}
+
+// 9. Admin Access Revoked (Dark Orange)
+export function sendAdminRemovedAlert(data: {
+  username: string; discord_id: string;
+  removed_by_name: string; removed_by_id: string;
+}): Promise<boolean> {
+  return sendEmbed(
+    `🚫 **ADMIN ACCESS REVOKED**\n${SEPARATOR}\n**Username:** ${data.username}\n**Discord ID:** ${data.discord_id}\n**Removed by:** ${data.removed_by_name} (${data.removed_by_id})\n${SEPARATOR}\n🕐 ${timestamp()}`,
+    0xe67e22
+  );
+}

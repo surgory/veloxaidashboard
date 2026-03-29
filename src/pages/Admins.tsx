@@ -9,7 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { UserPlus, Pencil, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { OWNER_DISCORD_ID } from "@/contexts/AuthContext";
+import { OWNER_DISCORD_ID, useAuth } from "@/contexts/AuthContext";
+import { sendAdminGrantedAlert, sendAdminRemovedAlert } from "@/lib/discord";
+import { logAuditAction } from "@/lib/audit";
 
 interface Admin {
   id: string;
@@ -46,6 +48,7 @@ export function isAuthorizedAdmin(discordId: string | undefined | null): boolean
 
 export default function Admins() {
   const { toast } = useToast();
+  const { discord } = useAuth();
   const [admins, setAdmins] = useState<Admin[]>(loadAdmins);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAdmin, setEditingAdmin] = useState<Admin | null>(null);
@@ -105,6 +108,18 @@ export default function Admins() {
       };
       updateAdmins([...admins, newAdmin]);
       toast({ title: "Admin added", description: username });
+      sendAdminGrantedAlert({
+        username: username.trim(),
+        discord_id: discordId.trim(),
+        role,
+        granted_by_name: discord?.username || "Unknown",
+        granted_by_id: discord?.id || "Unknown",
+      });
+      logAuditAction(
+        discord?.id || "unknown", discord?.username || "unknown",
+        "admin_grant", discordId.trim(),
+        `Granted ${role} access to ${username.trim()}`
+      );
     }
     setDialogOpen(false);
   };
@@ -116,6 +131,17 @@ export default function Admins() {
     }
     updateAdmins(admins.filter(a => a.id !== admin.id));
     toast({ title: "Admin removed", description: admin.username });
+    sendAdminRemovedAlert({
+      username: admin.username,
+      discord_id: admin.discordId,
+      removed_by_name: discord?.username || "Unknown",
+      removed_by_id: discord?.id || "Unknown",
+    });
+    logAuditAction(
+      discord?.id || "unknown", discord?.username || "unknown",
+      "admin_revoke", admin.discordId,
+      `Revoked access from ${admin.username}`
+    );
   };
 
   return (
