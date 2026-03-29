@@ -16,6 +16,7 @@ import AuditLogPage from "./pages/AuditLogPage";
 import LoginPage from "./pages/LoginPage";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
+import { isAuthorizedAdmin } from "./pages/Admins";
 
 const queryClient = new QueryClient();
 
