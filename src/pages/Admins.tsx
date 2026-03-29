@@ -9,7 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { UserPlus, Pencil, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { OWNER_DISCORD_ID } from "@/contexts/AuthContext";
+import { OWNER_DISCORD_ID, useAuth } from "@/contexts/AuthContext";
+import { sendAdminGrantedAlert, sendAdminRemovedAlert } from "@/lib/discord";
+import { logAuditAction } from "@/lib/audit";
 
 interface Admin {
   id: string;
