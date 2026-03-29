@@ -21,7 +21,7 @@ import { isAuthorizedAdmin } from "./pages/Admins";
 const queryClient = new QueryClient();
 
 function ProtectedApp() {
-  const { user, loading, isOwner } = useAuth();
+  const { user, loading, isOwner, discord } = useAuth();
 
   if (loading) {
     return (
