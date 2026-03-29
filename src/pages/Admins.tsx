@@ -131,6 +131,17 @@ export default function Admins() {
     }
     updateAdmins(admins.filter(a => a.id !== admin.id));
     toast({ title: "Admin removed", description: admin.username });
+    sendAdminRemovedAlert({
+      username: admin.username,
+      discord_id: admin.discordId,
+      removed_by_name: discord?.username || "Unknown",
+      removed_by_id: discord?.id || "Unknown",
+    });
+    logAuditAction(
+      discord?.id || "unknown", discord?.username || "unknown",
+      "admin_revoke", admin.discordId,
+      `Revoked access from ${admin.username}`
+    );
   };
 
   return (
