@@ -92,7 +92,7 @@ export default function GenerateKeys() {
         sendKeyGeneratedAlert({
           key, type: licenseType,
           owner_name: customerName || "N/A",
-          owner_email: customerEmail || "N/A",
+          owner_discord_id: customerDiscordId || "N/A",
           expiry: getExpiryLabel(licenseType),
           admin_name: discord?.username || "Unknown",
           admin_id: discord?.id || "Unknown",
