@@ -38,7 +38,7 @@ export default function GenerateKeys() {
   const { discord } = useAuth();
   const [licenseType, setLicenseType] = useState("premium");
   const [customerName, setCustomerName] = useState("");
-  const [customerEmail, setCustomerEmail] = useState("");
+  const [customerDiscordId, setCustomerDiscordId] = useState("");
   const [quantity, setQuantity] = useState("1");
   const [generatedKeys, setGeneratedKeys] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
