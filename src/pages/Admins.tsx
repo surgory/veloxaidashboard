@@ -108,6 +108,18 @@ export default function Admins() {
       };
       updateAdmins([...admins, newAdmin]);
       toast({ title: "Admin added", description: username });
+      sendAdminGrantedAlert({
+        username: username.trim(),
+        discord_id: discordId.trim(),
+        role,
+        granted_by_name: discord?.username || "Unknown",
+        granted_by_id: discord?.id || "Unknown",
+      });
+      logAuditAction(
+        discord?.id || "unknown", discord?.username || "unknown",
+        "admin_grant", discordId.trim(),
+        `Granted ${role} access to ${username.trim()}`
+      );
     }
     setDialogOpen(false);
   };
