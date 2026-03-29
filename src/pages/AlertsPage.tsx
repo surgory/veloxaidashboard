@@ -91,6 +91,24 @@ function buildAlerts(logs: ActivationLog[], licenses: License[]): Alert[] {
         description: `Key ${log.license_key} validated from HWID: ${log.hwid || "unknown"}`,
         time: timeAgo(log.created_at),
       });
+    } else if (log.action === "crack_attempt" || log.action === "debugger_detected") {
+      alerts.push({
+        id: log.id * 100 + 5,
+        type: "critical",
+        icon: Shield,
+        title: "Crack Attempt Detected",
+        description: `Debugger/crack tool detected from HWID: ${log.hwid || "unknown"}, IP: ${log.ip || "unknown"}, PC: ${log.pc_name || "unknown"}`,
+        time: timeAgo(log.created_at),
+      });
+    } else if (log.action === "invalid_key" || log.action === "invalid") {
+      alerts.push({
+        id: log.id * 100 + 6,
+        type: "warning",
+        icon: AlertTriangle,
+        title: "Invalid Key Attempt",
+        description: `Invalid key ${log.license_key} from HWID: ${log.hwid || "unknown"}, IP: ${log.ip || "unknown"}`,
+        time: timeAgo(log.created_at),
+      });
     }
   });
 
