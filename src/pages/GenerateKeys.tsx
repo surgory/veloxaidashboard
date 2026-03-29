@@ -38,7 +38,7 @@ export default function GenerateKeys() {
   const { discord } = useAuth();
   const [licenseType, setLicenseType] = useState("premium");
   const [customerName, setCustomerName] = useState("");
-  const [customerEmail, setCustomerEmail] = useState("");
+  const [customerDiscordId, setCustomerDiscordId] = useState("");
   const [quantity, setQuantity] = useState("1");
   const [generatedKeys, setGeneratedKeys] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -56,7 +56,7 @@ export default function GenerateKeys() {
           type: licenseType,
           status: "active",
           owner_name: customerName || null,
-          owner_email: customerEmail || null,
+          owner_discord_id: customerDiscordId || null,
           expires_at: getExpiresAt(licenseType),
           uses: 0,
           generated_by_discord_id: discord?.id || null,
@@ -68,7 +68,7 @@ export default function GenerateKeys() {
             const retryKey = generateKey();
             const { error: retryError } = await supabase.from("licenses").insert({
               key: retryKey, type: licenseType, status: "active",
-              owner_name: customerName || null, owner_email: customerEmail || null,
+              owner_name: customerName || null, owner_discord_id: customerDiscordId || null,
               expires_at: getExpiresAt(licenseType), uses: 0,
               generated_by_discord_id: discord?.id || null,
               generated_by_discord_name: discord?.username || null,
@@ -92,7 +92,7 @@ export default function GenerateKeys() {
         sendKeyGeneratedAlert({
           key, type: licenseType,
           owner_name: customerName || "N/A",
-          owner_email: customerEmail || "N/A",
+          owner_discord_id: customerDiscordId || "N/A",
           expiry: getExpiryLabel(licenseType),
           admin_name: discord?.username || "Unknown",
           admin_id: discord?.id || "Unknown",
@@ -147,8 +147,8 @@ export default function GenerateKeys() {
               <Input placeholder="John Doe" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label>Customer Email</Label>
-              <Input type="email" placeholder="john@example.com" value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} />
+              <Label>Customer Discord ID</Label>
+              <Input placeholder="e.g. 352614799290531840" value={customerDiscordId} onChange={(e) => setCustomerDiscordId(e.target.value)} />
             </div>
           </div>
           <div className="space-y-2">

@@ -6,23 +6,24 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UserPlus, Pencil, Trash2, Loader2 } from "lucide-react";
+import { UserPlus, Pencil, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { OWNER_DISCORD_ID } from "@/contexts/AuthContext";
 
 interface Admin {
   id: string;
   username: string;
-  email: string;
+  discordId: string;
   role: string;
   lastLogin: string;
 }
 
 const defaultAdmins: Admin[] = [
-  { id: "1", username: "admin", email: "admin@veloxai.site", role: "Owner", lastLogin: new Date().toLocaleString() },
+  { id: "1", username: "Owner", discordId: OWNER_DISCORD_ID, role: "Owner", lastLogin: new Date().toLocaleString() },
 ];
 
-function loadAdmins(): Admin[] {
+export function loadAdmins(): Admin[] {
   try {
     const stored = localStorage.getItem("velox_admins");
     return stored ? JSON.parse(stored) : defaultAdmins;
@@ -35,13 +36,21 @@ function saveAdmins(admins: Admin[]) {
   localStorage.setItem("velox_admins", JSON.stringify(admins));
 }
 
+/** Check if a Discord user ID is authorized to access the dashboard */
+export function isAuthorizedAdmin(discordId: string | undefined | null): boolean {
+  if (!discordId) return false;
+  if (discordId === OWNER_DISCORD_ID) return true;
+  const admins = loadAdmins();
+  return admins.some(a => a.discordId === discordId);
+}
+
 export default function Admins() {
   const { toast } = useToast();
   const [admins, setAdmins] = useState<Admin[]>(loadAdmins);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAdmin, setEditingAdmin] = useState<Admin | null>(null);
   const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
+  const [discordId, setDiscordId] = useState("");
   const [role, setRole] = useState("Admin");
 
   const updateAdmins = (newAdmins: Admin[]) => {
@@ -52,7 +61,7 @@ export default function Admins() {
   const openAdd = () => {
     setEditingAdmin(null);
     setUsername("");
-    setEmail("");
+    setDiscordId("");
     setRole("Admin");
     setDialogOpen(true);
   };
@@ -60,28 +69,37 @@ export default function Admins() {
   const openEdit = (admin: Admin) => {
     setEditingAdmin(admin);
     setUsername(admin.username);
-    setEmail(admin.email);
+    setDiscordId(admin.discordId);
     setRole(admin.role);
     setDialogOpen(true);
   };
 
   const handleSave = () => {
-    if (!username.trim() || !email.trim()) {
-      toast({ title: "Username and email are required", variant: "destructive" });
+    if (!username.trim() || !discordId.trim()) {
+      toast({ title: "Username and Discord ID are required", variant: "destructive" });
+      return;
+    }
+
+    if (!/^\d{17,20}$/.test(discordId.trim())) {
+      toast({ title: "Invalid Discord User ID", description: "Must be a 17-20 digit number", variant: "destructive" });
       return;
     }
 
     if (editingAdmin) {
       const updated = admins.map(a =>
-        a.id === editingAdmin.id ? { ...a, username: username.trim(), email: email.trim(), role } : a
+        a.id === editingAdmin.id ? { ...a, username: username.trim(), discordId: discordId.trim(), role } : a
       );
       updateAdmins(updated);
       toast({ title: "Admin updated", description: username });
     } else {
+      if (admins.some(a => a.discordId === discordId.trim())) {
+        toast({ title: "Discord ID already exists", variant: "destructive" });
+        return;
+      }
       const newAdmin: Admin = {
         id: crypto.randomUUID(),
         username: username.trim(),
-        email: email.trim(),
+        discordId: discordId.trim(),
         role,
         lastLogin: "Never",
       };
@@ -105,7 +123,7 @@ export default function Admins() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-display font-bold">Admins & Staff</h1>
-          <p className="text-sm text-muted-foreground mt-1">Manage who can access the dashboard</p>
+          <p className="text-sm text-muted-foreground mt-1">Manage who can access the dashboard via Discord ID</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
@@ -121,8 +139,8 @@ export default function Admins() {
                 <Input placeholder="Enter username..." value={username} onChange={(e) => setUsername(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>Email</Label>
-                <Input type="email" placeholder="admin@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+                <Label>Discord User ID</Label>
+                <Input placeholder="e.g. 352614799290531840" value={discordId} onChange={(e) => setDiscordId(e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label>Role</Label>
@@ -154,7 +172,7 @@ export default function Admins() {
               <TableHeader>
                 <TableRow className="border-border/50">
                   <TableHead>Username</TableHead>
-                  <TableHead>Email</TableHead>
+                  <TableHead>Discord ID</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead className="hidden md:table-cell">Last Login</TableHead>
                   <TableHead>Actions</TableHead>
@@ -164,7 +182,7 @@ export default function Admins() {
                 {admins.map((a) => (
                   <TableRow key={a.id} className="interactive-row border-border/30">
                     <TableCell className="font-medium">{a.username}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{a.email}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground font-mono">{a.discordId}</TableCell>
                     <TableCell><Badge variant="outline" className="bg-accent/50 text-foreground/70 border-border">{a.role}</Badge></TableCell>
                     <TableCell className="hidden md:table-cell text-sm text-muted-foreground">{a.lastLogin}</TableCell>
                     <TableCell>

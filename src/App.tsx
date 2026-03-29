@@ -16,11 +16,12 @@ import AuditLogPage from "./pages/AuditLogPage";
 import LoginPage from "./pages/LoginPage";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
+import { isAuthorizedAdmin } from "./pages/Admins";
 
 const queryClient = new QueryClient();
 
 function ProtectedApp() {
-  const { user, loading, isOwner } = useAuth();
+  const { user, loading, isOwner, discord } = useAuth();
 
   if (loading) {
     return (
@@ -30,7 +31,7 @@ function ProtectedApp() {
     );
   }
 
-  if (!user) {
+  if (!user || !isAuthorizedAdmin(discord?.id)) {
     return <LoginPage />;
   }
 
